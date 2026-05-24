@@ -1,0 +1,22 @@
+# Core dependencies
+pyspark>=3.3.0
+pandas>=1.5.0
+numpy>=1.23.0
+
+# Entity Resolution
+splink>=3.9.0
+
+# Data Quality
+great-expectations>=0.17.0
+
+# AWS
+boto3>=1.26.0
+awswrangler>=3.0.0
+
+# Utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0
+tenacity>=8.2.0
+
+# Phonetic matching
+jellyfish>=1.0.0
