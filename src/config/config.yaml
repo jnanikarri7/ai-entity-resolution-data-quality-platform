@@ -1,0 +1,105 @@
+# Entity Resolution Configuration
+
+# Data Sources
+sources:
+  - name: enrollment
+    path: s3://bucket/raw/enrollment/
+    format: parquet
+    trust_score: 10
+
+  - name: claims
+    path: s3://bucket/raw/claims/
+    format: parquet
+    trust_score: 6
+
+  - name: case_management
+    path: s3://bucket/raw/case_mgmt/
+    format: parquet
+    trust_score: 5
+
+# Blocking Strategy
+blocking:
+  passes:
+    - key: soundex_lastname_dob_year
+      description: "High precision blocking"
+      max_block_size: 100
+
+    - key: first3_last3_dob
+      description: "Typo tolerance"
+      max_block_size: 200
+
+    - key: zip_metaphone_lastname
+      description: "Geographic blocking"
+      max_block_size: 500
+
+# Matching Configuration
+matching:
+  threshold_match: 15.0
+  threshold_review: -5.0
+
+  comparison_columns:
+    - name: first_name
+      weight: 2.0
+
+    - name: last_name
+      weight: 3.0
+
+    - name: dob
+      weight: 4.0
+
+    - name: address
+      weight: 2.0
+
+# Survivorship Rules
+survivorship:
+  first_name:
+    rule: most_common
+    fallback: most_recent
+
+  last_name:
+    rule: most_common
+    fallback: most_recent
+
+  dob:
+    rule: most_complete
+    fallback: most_trusted_source
+
+  address:
+    rule: most_recent
+    filter: updated_within_2_years
+
+  ssn:
+    rule: most_trusted_source
+    source_priority: [enrollment, eligibility, claims]
+
+# Data Quality
+data_quality:
+  expectations:
+    input:
+      - expect_column_to_exist: [first_name, last_name, dob]
+      - expect_column_values_to_not_be_null:
+          column: first_name
+          mostly: 0.95
+
+    output:
+      - expect_column_values_to_be_unique:
+          column: golden_id
+      - expect_column_mean_to_be_between:
+          column: confidence_score
+          min_value: 0.85
+          max_value: 1.0
+
+# Output Configuration
+output:
+  golden_records_table: golden_records
+  match_pairs_table: match_pairs
+  match_explanations_table: match_explanations
+  format: iceberg
+  partition_by: [run_date]
+
+# Performance
+performance:
+  spark_executor_memory: 16g
+  spark_executor_cores: 4
+  spark_driver_memory: 8g
+  batch_size: 5000000  # Process 5M pairs at a time
