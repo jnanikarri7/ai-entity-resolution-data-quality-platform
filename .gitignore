@@ -65,6 +65,10 @@ data/processed/*
 *.db
 *.sqlite
 
+# Allow test data
+!tests/data/*.csv
+!tests/data/*.parquet
+
 # Logs
 *.log
 logs/
